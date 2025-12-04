@@ -1,1 +1,412 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget Dashboard 69</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Fonts: Kanit -->
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Kanit', sans-serif;
+      background-color: #fafafa;
+    }
+    .card {
+      background-color: white;
+      border: 1px solid #dbdbdb;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .gradient-text {
+      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); 
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .loading-spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #cc2366;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    /* Custom Scrollbar for Table */
+    .table-container::-webkit-scrollbar {
+      height: 8px;
+    }
+    .table-container::-webkit-scrollbar-track {
+      background: #f1f1f1; 
+      border-radius: 4px;
+    }
+    .table-container::-webkit-scrollbar-thumb {
+      background: #c1c1c1; 
+      border-radius: 4px;
+    }
+    .table-container::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8; 
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="text-gray-800">
 
+  <!-- Header -->
+  <nav class="bg-white border-b border-gray-300 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <h1 class="text-xl font-semibold gradient-text">งบประมาณองค์การนักศึกษา 69</h1>
+      </div>
+      <div class="text-sm text-gray-500 hidden md:block">Dashboard Analytics</div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="max-w-6xl mx-auto px-4 py-8 space-y-8">
+
+    <!-- Loading State -->
+    <div id="loading" class="flex flex-col items-center justify-center py-20">
+      <div class="loading-spinner mb-4"></div>
+      <p class="text-gray-500">กำลังโหลดข้อมูล...</p>
+      <p class="text-xs text-gray-400 mt-2">Connecting to Google Sheets...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error" class="hidden flex flex-col items-center justify-center py-20 text-red-500">
+      <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      <p>ไม่สามารถโหลดข้อมูลได้</p>
+      <p class="text-sm text-gray-400 mt-2">กรุณาตรวจสอบ URL ของ App Script หรือสิทธิ์การเข้าถึง</p>
+    </div>
+
+    <!-- Dashboard Content (Hidden initially) -->
+    <div id="dashboard" class="hidden space-y-8">
+      
+      <!-- Filter Section -->
+      <div class="bg-white border border-gray-300 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between sticky top-20 z-40 shadow-sm">
+        <label class="font-medium text-gray-700 mb-2 md:mb-0 md:mr-4">เลือกชมรม/หน่วยกิจกรรม:</label>
+        <select id="clubFilter" class="w-full md:w-64 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500" onchange="updateDashboard()">
+          <option value="All">ทั้งหมด (All Clubs)</option>
+        </select>
+      </div>
+
+      <!-- KPI Cards Overview -->
+      <!-- ปรับ grid-cols-4 เป็น grid-cols-5 เพื่อรองรับการ์ดใหม่ -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="card">
+          <p class="text-gray-500 text-sm font-medium">งบประมาณได้รับทั้งสิ้น</p>
+          <h2 class="text-2xl font-bold mt-1 text-gray-900">2,920,000 <span class="text-sm font-normal">บาท</span></h2>
+          <div class="mt-2 text-xs text-gray-400">Total Budget Pool</div>
+        </div>
+
+        <!-- เพิ่มการ์ดแสดงจำนวนโครงการ -->
+        <div class="card">
+          <p class="text-gray-500 text-sm font-medium">จำนวนโครงการ</p>
+          <h2 class="text-2xl font-bold mt-1 text-purple-600" id="totalProjects">0</h2>
+          <div class="mt-2 text-xs text-gray-400">โครงการทั้งหมด</div>
+        </div>
+        
+        <div class="card">
+          <p class="text-gray-500 text-sm font-medium">งบที่ขออนุมัติรวม</p>
+          <h2 class="text-2xl font-bold mt-1 text-blue-600" id="totalRequested">0</h2>
+          <div class="mt-2 text-xs text-gray-400">จากเอกสารโครงการ</div>
+        </div>
+
+        <div class="card">
+          <p class="text-gray-500 text-sm font-medium">ผลการอนุมัติรวม</p>
+          <h2 class="text-2xl font-bold mt-1 text-green-600" id="totalApproved">0</h2>
+          <div class="mt-2 text-xs text-gray-400">ยอดที่ได้รับจริง</div>
+        </div>
+
+        <div class="card">
+          <p class="text-gray-500 text-sm font-medium">งบประมาณที่ประหยัดได้</p>
+          <h2 class="text-2xl font-bold mt-1 text-pink-600" id="totalSaved">0</h2>
+          <div class="mt-2 text-xs font-medium text-pink-500 bg-pink-50 inline-block px-2 py-0.5 rounded-full" id="savedPercent">0%</div>
+          <div class="mt-2 text-xs text-gray-400 inline ml-1">(ตัดลดลง)</div>
+        </div>
+      </div>
+
+      <!-- Charts Section 1 -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="card col-span-1 lg:col-span-2">
+          <h3 class="font-semibold text-lg mb-4 text-gray-800 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+            งบประมาณแยกตามลักษณะกิจกรรม
+          </h3>
+          <div class="relative h-64 w-full">
+            <canvas id="activityTypeChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card flex flex-col justify-center items-center text-center">
+          <div class="p-4 rounded-full bg-blue-50 text-blue-500 mb-3">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+          </div>
+          <p class="text-gray-500 font-medium">กลุ่มเป้าหมายรวม</p>
+          <h2 class="text-4xl font-bold mt-2 text-gray-800" id="totalTarget">0</h2>
+          <p class="text-sm text-gray-400 mt-1">คน</p>
+        </div>
+      </div>
+
+      <!-- Charts Section 2 -->
+      <div class="grid grid-cols-1 gap-6">
+        <div class="card">
+          <div class="flex justify-between items-end mb-4">
+             <h3 class="font-semibold text-lg text-gray-800" id="barChartTitle">งบประมาณรายโครงการ</h3>
+             <span class="text-xs text-gray-400">*แสดงเฉพาะยอดอนุมัติ (สูงสุด 15 อันดับ)</span>
+          </div>
+          <div class="relative h-80 w-full">
+            <canvas id="projectBudgetChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Table Section -->
+      <div class="card overflow-hidden">
+        <h3 class="font-semibold text-lg text-gray-800 mb-4 flex items-center">
+          <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          รายละเอียดโครงการ
+        </h3>
+        <div class="overflow-x-auto table-container">
+          <table class="min-w-full text-sm text-left text-gray-500">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+              <tr>
+                <th scope="col" class="px-6 py-3 whitespace-nowrap">ชื่อโครงการ</th>
+                <th scope="col" class="px-6 py-3 whitespace-nowrap">วันที่จัด</th>
+                <th scope="col" class="px-6 py-3 text-right whitespace-nowrap">กลุ่มเป้าหมาย (คน)</th>
+                <th scope="col" class="px-6 py-3 text-right whitespace-nowrap">งบขออนุมัติ (บาท)</th>
+                <th scope="col" class="px-6 py-3 text-right whitespace-nowrap">งบอนุมัติ (บาท)</th>
+                <th scope="col" class="px-6 py-3 text-center whitespace-nowrap">ไฟล์</th>
+              </tr>
+            </thead>
+            <tbody id="projectTableBody">
+              <!-- JS will populate rows here -->
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-4 text-xs text-gray-400 text-center" id="tableFooter">
+          <!-- Footer info -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // --- ตั้งค่า URL ของ App Script ที่นี่ ---
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxaYPH4vIvKRwphPtjivGs9Q03o8dL7NlGJ5LJR175Ai_uBIZq9tqb2ymXxvbXnwXDc/exec'; 
+
+    let rawData = [];
+    let charts = {};
+
+    const formatTHB = (num) => new Intl.NumberFormat('th-TH', { style: 'decimal', minimumFractionDigits: 0 }).format(num);
+    const formatDate = (dateStr) => {
+      if(!dateStr) return "-";
+      const date = new Date(dateStr);
+      return isNaN(date.getTime()) ? dateStr : date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+    };
+
+    // ทำงานเมื่อโหลดหน้าเว็บ
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (API_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL') {
+        alert("กรุณาแก้ไขตัวแปร API_URL ในไฟล์ index.html เป็น URL ของ Web App ที่ได้จากการ Deploy");
+        return;
+      }
+      
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        rawData = await response.json();
+        
+        if (rawData.error) throw new Error(rawData.error);
+        
+        initDashboard(rawData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error').classList.remove('hidden');
+      }
+    });
+
+    function initDashboard(data) {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+
+      const clubs = [...new Set(data.map(item => item.club))].filter(Boolean);
+      const select = document.getElementById('clubFilter');
+      clubs.forEach(club => {
+        let option = document.createElement("option");
+        option.text = club;
+        option.value = club;
+        select.add(option);
+      });
+
+      updateDashboard();
+    }
+
+    function updateDashboard() {
+      const selectedClub = document.getElementById('clubFilter').value;
+      const filteredData = selectedClub === 'All' ? rawData : rawData.filter(item => item.club === selectedClub);
+
+      // Calculations
+      const totalReq = filteredData.reduce((sum, item) => sum + (Number(item.requestedBudget) || 0), 0);
+      const totalAppr = filteredData.reduce((sum, item) => sum + (Number(item.approvedBudget) || 0), 0);
+      const totalTarget = filteredData.reduce((sum, item) => sum + (Number(item.targetGroup) || 0), 0);
+      const saved = totalReq - totalAppr;
+      const savedPercentage = totalReq > 0 ? ((saved / totalReq) * 100).toFixed(1) : 0;
+      const totalProjects = filteredData.length; // นับจำนวนโครงการ
+
+      // Update DOM
+      document.getElementById('totalProjects').innerText = totalProjects; // แสดงผลจำนวนโครงการ
+      document.getElementById('totalRequested').innerText = formatTHB(totalReq);
+      document.getElementById('totalApproved').innerText = formatTHB(totalAppr);
+      document.getElementById('totalSaved').innerText = formatTHB(saved);
+      document.getElementById('savedPercent').innerText = `${savedPercentage}%`;
+      document.getElementById('totalTarget').innerText = formatTHB(totalTarget);
+      
+      document.getElementById('barChartTitle').innerText = selectedClub === 'All' 
+        ? 'งบประมาณแยกตามโครงการ (ทั้งหมด)' 
+        : `งบประมาณแยกตามโครงการ: ${selectedClub}`;
+
+      // Render Charts & Table
+      renderActivityPieChart(filteredData);
+      renderProjectBarChart(filteredData);
+      renderProjectTable(filteredData);
+    }
+
+    function renderActivityPieChart(data) {
+      const ctx = document.getElementById('activityTypeChart').getContext('2d');
+      const grouped = data.reduce((acc, item) => {
+        const type = item.activityType || 'ไม่ระบุ';
+        acc[type] = (acc[type] || 0) + (Number(item.approvedBudget) || 0);
+        return acc;
+      }, {});
+
+      const labels = Object.keys(grouped);
+      const values = Object.values(grouped);
+      const colors = ['#FFC107', '#FF5722', '#E91E63', '#9C27B0', '#3F51B5', '#03A9F4', '#00BCD4', '#8BC34A'];
+
+      if (charts.pie) charts.pie.destroy();
+
+      charts.pie = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors,
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'right', labels: { font: { family: 'Kanit' }, boxWidth: 12 } },
+            tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${formatTHB(ctx.raw)} บาท` } }
+          },
+          cutout: '60%'
+        }
+      });
+    }
+
+    function renderProjectBarChart(data) {
+      const ctx = document.getElementById('projectBudgetChart').getContext('2d');
+      // Sort desc by approved budget
+      const sortedData = [...data].sort((a, b) => b.approvedBudget - a.approvedBudget).slice(0, 15);
+      
+      const labels = sortedData.map(item => item.project.length > 20 ? item.project.substring(0, 20) + '...' : item.project);
+      const apprData = sortedData.map(item => item.approvedBudget);
+
+      if (charts.bar) charts.bar.destroy();
+
+      charts.bar = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'ได้รับอนุมัติ',
+              data: apprData,
+              backgroundColor: 'rgba(219, 39, 119, 0.8)', // pink-600
+              borderRadius: 4,
+              barPercentage: 0.6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { 
+              beginAtZero: true, 
+              grid: { borderDash: [2, 4], color: '#f3f4f6' },
+              ticks: { font: { family: 'Kanit' } }
+            },
+            x: { 
+              grid: { display: false },
+              ticks: { font: { family: 'Kanit' }, maxRotation: 45, minRotation: 45 }
+            }
+          },
+          plugins: {
+            legend: { labels: { font: { family: 'Kanit' } } },
+            tooltip: { 
+               titleFont: { family: 'Kanit' },
+               bodyFont: { family: 'Kanit' },
+               callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${formatTHB(ctx.raw)} บาท` } 
+            }
+          }
+        }
+      });
+    }
+
+    function renderProjectTable(data) {
+      const tbody = document.getElementById('projectTableBody');
+      tbody.innerHTML = ''; // Clear old rows
+
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center">ไม่พบข้อมูล</td></tr>';
+        return;
+      }
+
+      data.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = "bg-white border-b hover:bg-gray-50";
+        
+        // File Icon Logic
+        let fileIconHtml = '-';
+        if (item.fileUrl && item.fileUrl.trim() !== '') {
+          fileIconHtml = `
+            <a href="${item.fileUrl}" target="_blank" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors" title="ดูไฟล์โครงการ">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+            </a>
+          `;
+        }
+
+        tr.innerHTML = `
+          <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${item.project}</td>
+          <td class="px-6 py-4 whitespace-nowrap">${formatDate(item.startDate)}</td>
+          <td class="px-6 py-4 text-right">${formatTHB(item.targetGroup)}</td>
+          <td class="px-6 py-4 text-right text-gray-400">${formatTHB(item.requestedBudget)}</td>
+          <td class="px-6 py-4 text-right font-medium text-green-600">${formatTHB(item.approvedBudget)}</td>
+          <td class="px-6 py-4 text-center">${fileIconHtml}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('tableFooter').innerText = `แสดงทั้งหมด ${data.length} รายการ`;
+    }
+  </script>
+</body>
+</html>
