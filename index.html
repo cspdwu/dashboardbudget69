@@ -65,7 +65,7 @@
   <nav class="bg-white border-b border-gray-300 sticky top-0 z-50">
     <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
       <div class="flex items-center space-x-2">
-        <h1 class="text-xl font-semibold gradient-text">ผลการพิจารณางบประมาณองค์การนักศึกษา 69</h1>
+        <h1 class="text-xl font-semibold gradient-text">งบประมาณองค์การนักศึกษา 69</h1>
       </div>
       <div class="text-sm text-gray-500 hidden md:block">Dashboard Analytics</div>
     </div>
@@ -103,7 +103,7 @@
       <!-- Responsive Grid: Mobile 1 column, Tablet 2 columns, Desktop 5 columns -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <div class="card">
-          <p class="text-gray-500 text-sm font-medium">งบประมาณที่จัดสรร</p>
+          <p class="text-gray-500 text-sm font-medium">งบประมาณได้รับทั้งสิ้น</p>
           <h2 class="text-2xl font-bold mt-1 text-gray-900">2,920,000 <span class="text-sm font-normal">บาท</span></h2>
           <div class="mt-2 text-xs text-gray-400">Total Budget Pool</div>
         </div>
@@ -121,13 +121,13 @@
         </div>
 
         <div class="card">
-          <p class="text-gray-500 text-sm font-medium">ผลการพิจารณารวม</p>
+          <p class="text-gray-500 text-sm font-medium">ผลการอนุมัติรวม</p>
           <h2 class="text-2xl font-bold mt-1 text-green-600" id="totalApproved">0</h2>
           <div class="mt-2 text-xs text-gray-400">ยอดที่ได้รับจริง</div>
         </div>
 
         <div class="card">
-          <p class="text-gray-500 text-sm font-medium">งบประมาณที่ปรับลด</p>
+          <p class="text-gray-500 text-sm font-medium">งบประมาณที่ประหยัดได้</p>
           <h2 class="text-2xl font-bold mt-1 text-pink-600" id="totalSaved">0</h2>
           <div class="mt-2 text-xs font-medium text-pink-500 bg-pink-50 inline-block px-2 py-0.5 rounded-full" id="savedPercent">0%</div>
           <div class="mt-2 text-xs text-gray-400 inline ml-1">(ตัดลดลง)</div>
@@ -150,7 +150,7 @@
           <div class="p-4 rounded-full bg-blue-50 text-blue-500 mb-3">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
           </div>
-          <p class="text-gray-500 font-medium">กลุ่มเป้าหมายรวมทุกโครงการ</p>
+          <p class="text-gray-500 font-medium">กลุ่มเป้าหมายรวม</p>
           <h2 class="text-4xl font-bold mt-2 text-gray-800" id="totalTarget">0</h2>
           <p class="text-sm text-gray-400 mt-1">คน</p>
         </div>
@@ -182,9 +182,7 @@
                 <th scope="col" class="px-6 py-3 whitespace-nowrap">ชื่อโครงการ</th>
                 <th scope="col" class="px-6 py-3 whitespace-nowrap">วันที่จัด</th>
                 <th scope="col" class="px-6 py-3 text-right whitespace-nowrap">กลุ่มเป้าหมาย (คน)</th>
-                <th scope="col" class="px-6 py-3 text-right whitespace-nowrap">งบขออนุมัติ (บาท)</th>
                 <th scope="col" class="px-6 py-3 text-right whitespace-nowrap">งบอนุมัติ (บาท)</th>
-                <th scope="col" class="px-6 py-3 text-center whitespace-nowrap">ไฟล์</th>
               </tr>
             </thead>
             <tbody id="projectTableBody">
@@ -375,31 +373,19 @@
       tbody.innerHTML = ''; // Clear old rows
 
       if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center">ไม่พบข้อมูล</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center">ไม่พบข้อมูล</td></tr>';
         return;
       }
 
       data.forEach(item => {
         const tr = document.createElement('tr');
         tr.className = "bg-white border-b hover:bg-gray-50";
-        
-        // File Icon Logic
-        let fileIconHtml = '-';
-        if (item.fileUrl && item.fileUrl.trim() !== '') {
-          fileIconHtml = `
-            <a href="${item.fileUrl}" target="_blank" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors" title="ดูไฟล์โครงการ">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-            </a>
-          `;
-        }
 
         tr.innerHTML = `
           <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${item.project}</td>
           <td class="px-6 py-4 whitespace-nowrap">${formatDate(item.startDate)}</td>
           <td class="px-6 py-4 text-right">${formatTHB(item.targetGroup)}</td>
-          <td class="px-6 py-4 text-right text-gray-400">${formatTHB(item.requestedBudget)}</td>
           <td class="px-6 py-4 text-right font-medium text-green-600">${formatTHB(item.approvedBudget)}</td>
-          <td class="px-6 py-4 text-center">${fileIconHtml}</td>
         `;
         tbody.appendChild(tr);
       });
